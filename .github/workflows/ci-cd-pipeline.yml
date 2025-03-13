@@ -1,0 +1,68 @@
+name: CI/CD Pipeline for Node.js Application
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test -- --reporters=mocha-junit-reporter
+        continue-on-error: true  # To allow artifact upload even if tests fail
+
+      - name: Upload test results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ./test-results.xml
+
+  deploy:
+    runs-on: self-hosted
+    needs: test
+    name: Deploy to Self-Hosted Runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download test results artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results
+          path: ./test-results
+
+      - name: Display test results
+        run: cat ./test-results/test-results.xml
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy Application
+        run: |
+          echo "Deploying the Node.js application to the self-hosted runner..."
+          # Insert deployment commands here (e.g., PM2, Docker, or direct deployment commands)
+
